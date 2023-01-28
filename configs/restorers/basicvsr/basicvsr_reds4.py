@@ -75,9 +75,9 @@ demo_pipeline = [
 ]
 
 data = dict(
-    workers_per_gpu=6,
-    train_dataloader=dict(samples_per_gpu=4, drop_last=True),  # 2 gpus
-    val_dataloader=dict(samples_per_gpu=1),
+    workers_per_gpu=1,
+    train_dataloader=dict(samples_per_gpu=1, drop_last=True),  # 2 gpus
+    val_dataloader=dict(samples_per_gpu=1, workers_per_gpu=1),
     test_dataloader=dict(samples_per_gpu=1, workers_per_gpu=1),
 
     # train
@@ -100,7 +100,7 @@ data = dict(
         gt_folder='data/REDS/train_sharp',
         num_input_frames=100,
         pipeline=test_pipeline,
-        scale=4,
+        scale=2,
         val_partition='REDS4',
         test_mode=True),
     # test
@@ -110,7 +110,7 @@ data = dict(
         gt_folder='data/REDS/train_sharp',
         num_input_frames=100,
         pipeline=test_pipeline,
-        scale=4,
+        scale=2,
         val_partition='REDS4',
         test_mode=True),
 )
