@@ -80,14 +80,18 @@ def main():
             data['lq'] = [np.flip(frame, axis=2) for frame in frames]
             data = test_pipeline(data)
             data = data['lq'].unsqueeze(0)
-            result = model(lq=data.to(device), test_mode=True)['output'].cpu()[0]
+            try:
+                result = model(lq=data.to(device), test_mode=True)['output'].cpu()[0]
 
-            for k,frame in enumerate(result):
-                output = tensor2img(frame)
-                #video_writer.write(output.astype(np.uint8))
+                for k,frame in enumerate(result):
+                    output = tensor2img(frame)
+                    #video_writer.write(output.astype(np.uint8))
 
-                # write image with 8 zeros padding
-                cv2.imwrite(osp.join(args.output_dir, f"{i+k:08d}.jpg"), output)
+                    # write image with 8 zeros padding
+                    cv2.imwrite(osp.join(args.output_dir, f"{i+k:08d}.jpg"), output)
+            except:
+                print("Error in frame ", i)
+                continue
 
     # run ffmpeg to convert images to video
     os.system(f"ffmpeg -y -r {fps} -i {osp.join(args.output_dir, '%08d.jpg')} -c:v libx264 -pix_fmt yuv420p -r {fps} {args.input_dir}.out.mp4")
