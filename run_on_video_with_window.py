@@ -76,8 +76,14 @@ def main():
         for i in tqdm(range(0, frame_count, args.max_seq_len)):
             data = dict(lq=[], lq_path=None, key="")
             frames = video_reader[i:i + args.max_seq_len]
-            # print(frames.shape)
-            data['lq'] = [np.flip(frame, axis=2) for frame in frames]
+
+            for index, frame in enumerate(frames):
+                if frame is None:
+                    print("Error in frame:", index)
+                else:
+                    flipped_frame = np.flip(frame, axis=2)
+                    data["lq"].append(flipped_frame)
+
             data = test_pipeline(data)
             data = data['lq'].unsqueeze(0)
             try:
