@@ -88,13 +88,16 @@ def main():
             data = data['lq'].unsqueeze(0)
             try:
                 result = model(lq=data.to(device), test_mode=True)['output'].cpu()[0]
-
+                print("result count:", len(result))
                 for k,frame in enumerate(result):
+                    print("k:", k)
                     output = tensor2img(frame)
+                    print("output:", output)
                     #video_writer.write(output.astype(np.uint8))
 
                     # write image with 8 zeros padding
-                    cv2.imwrite(osp.join(args.output_dir, f"{i+k:08d}.jpg"), output)
+                    res = cv2.imwrite(osp.join(args.output_dir, f"{i+k:08d}.jpg"), output)
+                    print("write res:", res)
             except:
                 print("Error in frame ", i)
                 continue
