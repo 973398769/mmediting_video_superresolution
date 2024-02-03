@@ -9,6 +9,8 @@ import numpy as np
 import cv2
 from tqdm import tqdm
 import torch
+import imageio
+
 from mmedit.datasets.pipelines import Compose
 from mmedit.apis import init_model, restoration_video_inference
 from mmedit.core import tensor2img
@@ -70,12 +72,20 @@ def main():
     video_reader = mmcv.VideoReader(args.input_dir)
     frame_count = video_reader.frame_cnt
     fps = video_reader.fps
+    video_reader = imageio.get_reader(args.input_dir)
     # fourcc = cv2.VideoWriter_fourcc('i', 'Y', 'U', 'V')
     #video_writer = cv2.VideoWriter(args.output_dir, fourcc, video_reader.fps, (video_reader.width * 4, video_reader.height * 4))
     with torch.no_grad():
         for i in tqdm(range(0, frame_count, args.max_seq_len)):
             data = dict(lq=[], lq_path=None, key="")
-            frames = video_reader[i:i + args.max_seq_len]
+            frames = []
+            for j in range(i, min(i+args.max_seq_len, frame_count-1)):
+                print("process j:", j)
+                frame = video_reader.get_data(j)
+                if frame is None:
+                    print("frame j is none", j)
+                else:
+                    frames.append(frame)
 
             for index, frame in enumerate(frames):
                 if frame is None:
@@ -92,7 +102,7 @@ def main():
                 for k,frame in enumerate(result):
                     print("k:", k)
                     output = tensor2img(frame)
-                    print("output:", output)
+                    # print("output:", output)
                     #video_writer.write(output.astype(np.uint8))
 
                     # write image with 8 zeros padding
