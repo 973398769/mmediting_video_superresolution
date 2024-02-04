@@ -10,7 +10,6 @@ import cv2
 from tqdm import tqdm
 import torch
 import imageio
-import shutil
 
 from mmedit.datasets.pipelines import Compose
 from mmedit.apis import init_model, restoration_video_inference
@@ -69,16 +68,17 @@ def main():
     test_pipeline = tmp_pipeline
 
     test_pipeline = Compose(test_pipeline)
-    
-    video_reader = mmcv.VideoReader(args.input_dir)
+
+    input_dir = args.input_dir
+    video_reader = mmcv.VideoReader(input_dir)
     frame_count = video_reader.frame_cnt
     fps = video_reader.fps
     width = video_reader.width
     height = video_reader.height
     if width >= 5000 or height >= 2800:
         print("This is already a 5K video.")
-        output_dir = {args.input_dir}.out.mp4
-        shutil.copytree(args.input_dir, output_dir)
+        output_dir = f"{input_dir}.out.mp4"
+        os.system(f"cp {input_dir} {output_dir}")
     else:
         video_reader = imageio.get_reader(args.input_dir)
         # fourcc = cv2.VideoWriter_fourcc('i', 'Y', 'U', 'V')
@@ -88,7 +88,6 @@ def main():
                 data = dict(lq=[], lq_path=None, key="")
                 frames = []
                 for j in range(i, min(i+args.max_seq_len, frame_count-1)):
-                    print("process j:", j)
                     frame = video_reader.get_data(j)
                     if frame is None:
                         print("frame j is none", j)
@@ -108,7 +107,6 @@ def main():
                     result = model(lq=data.to(device), test_mode=True)['output'].cpu()[0]
                     print("result count:", len(result))
                     for k,frame in enumerate(result):
-                        print("k:", k)
                         output = tensor2img(frame)
                         # print("output:", output)
                         #video_writer.write(output.astype(np.uint8))
@@ -121,6 +119,6 @@ def main():
                     continue
 
         # run ffmpeg to convert images to video
-        os.system(f"ffmpeg -y -r {fps} -i {osp.join(args.output_dir, '%08d.jpg')} -c:v libx264 -pix_fmt yuv420p -r {fps} {args.input_dir}.out.mp4")
+        os.system(f"ffmpeg -y -r {fps} -i {osp.join(args.output_dir, '%08d.jpg')} -c:v libx264 -pix_fmt yuv420p -r {fps} {input_dir}.out.mp4")
 if __name__ == '__main__':
     main()
