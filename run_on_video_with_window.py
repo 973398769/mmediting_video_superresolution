@@ -9,7 +9,6 @@ import numpy as np
 import cv2
 from tqdm import tqdm
 import torch
-import imageio
 
 from mmedit.datasets.pipelines import Compose
 from mmedit.apis import init_model, restoration_video_inference
@@ -80,7 +79,6 @@ def main():
         output_dir = f"{input_dir}.out.mp4"
         os.system(f"cp {input_dir} {output_dir}")
     else:
-        # video_reader = imageio.get_reader(args.input_dir)
         # fourcc = cv2.VideoWriter_fourcc('i', 'Y', 'U', 'V')
         #video_writer = cv2.VideoWriter(args.output_dir, fourcc, video_reader.fps, (video_reader.width * 4, video_reader.height * 4))
         with torch.no_grad():
@@ -112,8 +110,7 @@ def main():
                         #video_writer.write(output.astype(np.uint8))
 
                         # write image with 8 zeros padding
-                        res = cv2.imwrite(osp.join(args.output_dir, f"{i+k:08d}.jpg"), output)
-                        print("write res:", res)
+                        cv2.imwrite(osp.join(args.output_dir, f"{i+k:08d}.jpg"), output)
                 except:
                     print("Error in frame ", i)
                     continue
