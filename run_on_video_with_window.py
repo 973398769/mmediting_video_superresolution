@@ -80,19 +80,19 @@ def main():
         output_dir = f"{input_dir}.out.mp4"
         os.system(f"cp {input_dir} {output_dir}")
     else:
-        video_reader = imageio.get_reader(args.input_dir)
+        # video_reader = imageio.get_reader(args.input_dir)
         # fourcc = cv2.VideoWriter_fourcc('i', 'Y', 'U', 'V')
         #video_writer = cv2.VideoWriter(args.output_dir, fourcc, video_reader.fps, (video_reader.width * 4, video_reader.height * 4))
         with torch.no_grad():
             for i in tqdm(range(0, frame_count, args.max_seq_len)):
                 data = dict(lq=[], lq_path=None, key="")
-                frames = []
-                for j in range(i, min(i+args.max_seq_len, frame_count)):
-                    frame = video_reader.get_data(j)
-                    if frame is None:
-                        print("frame j is none", j)
-                    else:
-                        frames.append(frame)
+                frames = video_reader[i:i + args.max_seq_len]
+                # for j in range(i, min(i+args.max_seq_len, frame_count)):
+                #     frame = video_reader.get_data(j)
+                #     if frame is None:
+                #         print("frame j is none", j)
+                #     else:
+                #         frames.append(frame)
 
                 for index, frame in enumerate(frames):
                     if frame is None:
