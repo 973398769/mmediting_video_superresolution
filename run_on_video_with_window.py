@@ -87,7 +87,7 @@ def main():
             for i in tqdm(range(0, frame_count, args.max_seq_len)):
                 data = dict(lq=[], lq_path=None, key="")
                 frames = []
-                for j in range(i, min(i+args.max_seq_len, frame_count-1)):
+                for j in range(i, min(i+args.max_seq_len, frame_count)):
                     frame = video_reader.get_data(j)
                     if frame is None:
                         print("frame j is none", j)
