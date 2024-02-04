@@ -10,6 +10,7 @@ import cv2
 from tqdm import tqdm
 import torch
 import imageio
+import shutil
 
 from mmedit.datasets.pipelines import Compose
 from mmedit.apis import init_model, restoration_video_inference
@@ -72,47 +73,54 @@ def main():
     video_reader = mmcv.VideoReader(args.input_dir)
     frame_count = video_reader.frame_cnt
     fps = video_reader.fps
-    video_reader = imageio.get_reader(args.input_dir)
-    # fourcc = cv2.VideoWriter_fourcc('i', 'Y', 'U', 'V')
-    #video_writer = cv2.VideoWriter(args.output_dir, fourcc, video_reader.fps, (video_reader.width * 4, video_reader.height * 4))
-    with torch.no_grad():
-        for i in tqdm(range(0, frame_count, args.max_seq_len)):
-            data = dict(lq=[], lq_path=None, key="")
-            frames = []
-            for j in range(i, min(i+args.max_seq_len, frame_count-1)):
-                print("process j:", j)
-                frame = video_reader.get_data(j)
-                if frame is None:
-                    print("frame j is none", j)
-                else:
-                    frames.append(frame)
+    width = video_reader.width
+    height = video_reader.height
+    if width >= 5000 or height >= 2800:
+        print("This is already a 5K video.")
+        output_dir = {args.input_dir}.out.mp4
+        shutil.copytree(args.input_dir, output_dir)
+    else:
+        video_reader = imageio.get_reader(args.input_dir)
+        # fourcc = cv2.VideoWriter_fourcc('i', 'Y', 'U', 'V')
+        #video_writer = cv2.VideoWriter(args.output_dir, fourcc, video_reader.fps, (video_reader.width * 4, video_reader.height * 4))
+        with torch.no_grad():
+            for i in tqdm(range(0, frame_count, args.max_seq_len)):
+                data = dict(lq=[], lq_path=None, key="")
+                frames = []
+                for j in range(i, min(i+args.max_seq_len, frame_count-1)):
+                    print("process j:", j)
+                    frame = video_reader.get_data(j)
+                    if frame is None:
+                        print("frame j is none", j)
+                    else:
+                        frames.append(frame)
 
-            for index, frame in enumerate(frames):
-                if frame is None:
-                    print("Error in frame:", index)
-                else:
-                    flipped_frame = np.flip(frame, axis=2)
-                    data["lq"].append(flipped_frame)
+                for index, frame in enumerate(frames):
+                    if frame is None:
+                        print("Error in frame:", index)
+                    else:
+                        flipped_frame = np.flip(frame, axis=2)
+                        data["lq"].append(flipped_frame)
 
-            data = test_pipeline(data)
-            data = data['lq'].unsqueeze(0)
-            try:
-                result = model(lq=data.to(device), test_mode=True)['output'].cpu()[0]
-                print("result count:", len(result))
-                for k,frame in enumerate(result):
-                    print("k:", k)
-                    output = tensor2img(frame)
-                    # print("output:", output)
-                    #video_writer.write(output.astype(np.uint8))
+                data = test_pipeline(data)
+                data = data['lq'].unsqueeze(0)
+                try:
+                    result = model(lq=data.to(device), test_mode=True)['output'].cpu()[0]
+                    print("result count:", len(result))
+                    for k,frame in enumerate(result):
+                        print("k:", k)
+                        output = tensor2img(frame)
+                        # print("output:", output)
+                        #video_writer.write(output.astype(np.uint8))
 
-                    # write image with 8 zeros padding
-                    res = cv2.imwrite(osp.join(args.output_dir, f"{i+k:08d}.jpg"), output)
-                    print("write res:", res)
-            except:
-                print("Error in frame ", i)
-                continue
+                        # write image with 8 zeros padding
+                        res = cv2.imwrite(osp.join(args.output_dir, f"{i+k:08d}.jpg"), output)
+                        print("write res:", res)
+                except:
+                    print("Error in frame ", i)
+                    continue
 
-    # run ffmpeg to convert images to video
-    os.system(f"ffmpeg -y -r {fps} -i {osp.join(args.output_dir, '%08d.jpg')} -c:v libx264 -pix_fmt yuv420p -r {fps} {args.input_dir}.out.mp4")
+        # run ffmpeg to convert images to video
+        os.system(f"ffmpeg -y -r {fps} -i {osp.join(args.output_dir, '%08d.jpg')} -c:v libx264 -pix_fmt yuv420p -r {fps} {args.input_dir}.out.mp4")
 if __name__ == '__main__':
     main()
